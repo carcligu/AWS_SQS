@@ -1,6 +1,6 @@
 # INTRODUCTION
 
-In this repository I use bash scripts to send messages to SQS and escalete EC2 instances depending on how saturated is the queue. For that purpose, 3 processes are defined: 
+In this repository I use bash scripts to send messages to SQS and scale EC2 instances depending on how saturated is the queue. For that purpose, 3 processes are defined: 
 
 * Send 100 messages to SQS (defined in AWS_Script script)
 * Consum ("Delete") messages from the queue every 6 seconds (delte_messages script)
