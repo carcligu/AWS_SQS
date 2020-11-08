@@ -1,0 +1,28 @@
+URL="https://eu-west-1.queue.amazonaws.com/392720278937/practica.fifo"
+
+#PROCESO 1
+QUEUE_NAME=$(aws sqs list-queues --queue-name-prefix prac)
+if [ ${#QUEUE_NAME} -ge 5 ];
+	then echo "queue exists, deleting old messages"
+	aws sqs purge-queue --queue-url https://eu-west-1.queue.amazonaws.com/392720278937/practica.fifo
+#command to delete messages in the queu
+else
+	echo "creating a new queue with the name practica.fifo"
+	aws sqs create-queue --queue-name practica.fifo --attributes {\"FifoQueue\":\"true\"}
+fi
+
+#echo "Queue name: $QUEUE_NAME"
+
+#FOR LOOP IN BASH
+for i in {1..100}
+do
+	echo "Mensaje$i"
+	aws sqs send-message --queue-url ${URL} --message-body "MENSAJE DE PRUEBA$i" --message-group-id "Prueba" --message-deduplication-id "Prueba$i"
+done
+
+
+#PROCESOS 2 y 3
+bash delete_messages & bash manage_instances
+
+echo "---------------------------------------------------------------------------------------"
+echo "PROCESO TERMINADO CON EXITO"

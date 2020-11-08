@@ -1,0 +1,46 @@
+URL="https://eu-west-1.queue.amazonaws.com/392720278937/practica.fifo"
+
+NUMBER_MESSAGES=$(aws sqs get-queue-attributes --queue-url $URL --attribute-name ApproximateNumberOfMessages --query 'Attributes.ApproximateNumberOfMessages' --output text)
+NUMBER_INSTANCES=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query 'Reservations[*].Instances[*].InstanceId' --output text | wc -l)
+LIMIT=$"0"
+LIMIT_INSTANCES=$"5"
+#create instance
+#aws ec2 run-instances --image-id ami-1b791862 --count 1 --instance-type t2.micro --subnet-id subnet-042d467c4dd426c18
+
+#GET INSTACE ID
+while [ "$NUMBER_MESSAGES" -gt "$LIMIT" ];
+do
+	NUMBER_MESSAGES=$(aws sqs get-queue-attributes --queue-url $URL --attribute-name ApproximateNumberOfMessages --query 'Attributes.ApproximateNumberOfMessages' --output text)
+	NUMBER_INSTANCES=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query 'Reservations[*].Instances[*].InstanceId' --output text | wc -l)
+	#calculate status
+	STATUS=$(((( NUMBER_MESSAGES + 9 ) / 10 ) - NUMBER_INSTANCES))
+	echo "Number of instances: $NUMBER_INSTANCES , Number or messages: $NUMBER_MESSAGES , Status: $STATUS "
+	if [ "$STATUS" -lt "$LIMIT" ];
+		then INSTANCE_ID_DELETE=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query 'Reservations[0].Instances[*].InstanceId' --output text)
+		echo "Stoping instance $INSTANCE_ID_DELETE"
+		aws ec2 stop-instances --instance-ids $INSTANCE_ID_DELETE
+
+	elif [ "$STATUS" -gt "$LIMIT" ] && [ "$NUMBER_INSTANCES" -lt "$LIMIT_INSTANCES" ];
+		then echo "createing instance"
+		aws ec2 run-instances --image-id ami-1b791862 --count 1 --instance-type t2.micro --subnet-id subnet-042d467c4dd426c18
+
+	fi
+	sleep 15
+done
+
+echo "NO MORE MESSAGES TO DELETE"
+echo "Deleting active instances"
+
+
+NUMBER_INSTANCES=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query 'Reservations[*].Instances[*].InstanceId' --output text | wc -l)
+while [ "$NUMBER_INSTANCES" -gt "$LIMIT" ];
+do
+	NUMBER_INSTANCES=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query 'Reservations[*].Instances[*].InstanceId' --output text | wc -l)
+        INSTANCE_ID_DELETE=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query 'Reservations[0].Instances[*].InstanceId' --output text)
+        echo "Stoping instance $INSTANCE_ID_DELETE"
+	aws ec2 stop-instances --instance-ids $INSTANCE_ID_DELETE
+	sleep 30
+done
+
+echo "NO MORE INSTANCES ACTIVE"
+

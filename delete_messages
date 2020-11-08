@@ -1,0 +1,22 @@
+URL="https://eu-west-1.queue.amazonaws.com/392720278937/practica.fifo"
+
+NUMBER_MESSAGES=$(aws sqs get-queue-attributes --queue-url $URL --attribute-name ApproximateNumberOfMessages --query 'Attributes.ApproximateNumberOfMessages' --output text)
+LIMIT=$"0"
+echo $LIMIT
+echo $NUMBER_MESSAGES
+
+#if [ "$NUMBER_MESSAGES" -gt "$LIMIT" ];
+#	then echo "100 mensajes en cola"
+#else
+#	echo "menos de 100 mensajes en cola"
+#fi
+
+
+for i in {1..100}
+do
+	echo "Deleting message $i"
+	RECEIPT_HANDLE=$(aws sqs receive-message --queue-url $URL --query 'Messages[0].ReceiptHandle' --output text) 
+	aws sqs delete-message --queue-url $URL --receipt-handle $RECEIPT_HANDLE
+	sleep 6
+done
+
